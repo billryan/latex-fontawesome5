@@ -1,14 +1,48 @@
 import os
 import json
+import tarfile
+import re
+import shutil
+from datetime import datetime
+import requests
 
-# download zip file from https://fontawesome.com/ and extract into fontawesome directory.
-INPUT_FILE = os.path.join("fontawesome", "advanced-options", "metadata", "icons.json")
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# download fontawesome latest tag from GitHub
+LATEST_URL = 'https://github.com/FortAwesome/Font-Awesome/releases/latest'
+response = requests.get(LATEST_URL, allow_redirects=False)
+latest_tag = response.headers['Location'].split('/')[-1]
+latest_tag_tgz_url = 'https://github.com/FortAwesome/Font-Awesome/archive/{}.tar.gz'.format(latest_tag)
+OUTPUT_TGZ_FILE = 'fontawesome-{}.tar.gz'.format(latest_tag)
+current_dir_files = os.listdir(PROJECT_ROOT)
+if OUTPUT_TGZ_FILE not in current_dir_files:
+    print('download latest tag: {}...'.format(latest_tag))
+    file_response = requests.get(latest_tag_tgz_url)
+    with open(OUTPUT_TGZ_FILE, 'wb') as f:
+        f.write(file_response.content)
+
+whiltelist = re.compile(r'.*/metadata|otfs/.*')
+try:
+    t = tarfile.open(OUTPUT_TGZ_FILE, 'r:gz')
+except IOError as e:
+    print(e)
+else:
+    raw_output = '/tmp/fontawesome'
+    print('extract and move to fontawesome folder...')
+    t.extractall(raw_output, members=[m for m in t.getmembers() if whiltelist.search(m.name)])
+    src_folder = '{}/Font-Awesome-{}'.format(raw_output, latest_tag)
+    dest_folder = '{}/fontawesome'.format(PROJECT_ROOT)
+    shutil.move(src_folder, dest_folder)
+
+INPUT_FILE = os.path.join(PROJECT_ROOT, "fontawesome", "metadata", "icons.json")
 OUTPUT_FILE = 'fontawesome5.sty'
+
+today = datetime.now().strftime('%Y/%m/%d')
 
 OUTPUT_HEADER = r'''
 % Identify this package.
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{fontawesome5}[2018/01/04 v5.0.2 font awesome icons]
+\ProvidesPackage{fontawesome5}[__date v__tag fontawesome icons]
 % Requirements to use.
 \usepackage{fontspec}
 % Configure a directory location for fonts(default: 'fonts/')
@@ -39,7 +73,7 @@ OUTPUT_HEADER = r'''
 \newcommand*{\faicon}[1]{{
   \csname faicon@#1\endcsname
 }}
-'''
+'''.replace('__date', today).replace('__tag', latest_tag)
 
 OUTPUT_LINE = '\expandafter\def\csname faicon@%(name)s\endcsname {%(font)s\symbol{"%(symbol)s}} \n'
 

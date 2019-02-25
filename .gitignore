@@ -222,3 +222,7 @@ TSWLatexianTemp*
 
 # expex forward references with \gathertags
 *-tags.tex
+
+# tar.gz compressed files
+*.tar.gz
+
