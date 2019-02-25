@@ -36,6 +36,8 @@ else:
 
 INPUT_FILE = os.path.join(PROJECT_ROOT, "fontawesome", "metadata", "icons.json")
 OUTPUT_FILE = 'fontawesome5.sty'
+GENERIC_FILE = 'fontawesomesymbols-generic.tex'
+XELUATEX_FILE = 'fontawesomesymbols-xeluatex.tex'
 
 today = datetime.now().strftime('%Y/%m/%d')
 
@@ -73,23 +75,40 @@ OUTPUT_HEADER = r'''
 \newcommand*{\faicon}[1]{{
   \csname faicon@#1\endcsname
 }}
+
+% generic icon commands and aliases
+\input{fontawesomesymbols-generic.tex}
+
+% icon-specific commands
+\input{fontawesomesymbols-xeluatex.tex}
+
+\endinput
 '''.replace('__date', today).replace('__tag', latest_tag)
 
 OUTPUT_LINE = '\expandafter\def\csname faicon@%(name)s\endcsname {%(font)s\symbol{"%(symbol)s}} \n'
+GENERIC_LINE = '\def\\fa%(faname)s{\\faicon{%(name)s}}\n'
+
+def hyphens2camel(hyphenstr):
+    return ''.join([i.capitalize() for i in hyphenstr.split('-')])
 
 def main():
     with open(INPUT_FILE, 'r') as json_data:
         icons = json.load(json_data)
         with open(OUTPUT_FILE, 'w') as w:
             w.write(OUTPUT_HEADER)
+        with open(XELUATEX_FILE, 'w') as x, open(GENERIC_FILE, 'w') as g:
             for icon_name in sorted(icons.keys()):
                 font = "\FA" if "brands" not in icons[icon_name]["styles"] else "\FAbrands"
-                w.write(
+                x.write(
                     OUTPUT_LINE % {
                         'name': icon_name, 'symbol': icons[icon_name]["unicode"].upper(), "font": font
                     }
                 )
-            w.write(r'\endinput')
+                g.write(
+                    GENERIC_LINE % {
+                        'name': icon_name, 'faname': hyphens2camel(icon_name)
+                    }
+                )
 
 
 if __name__ == "__main__":
