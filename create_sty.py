@@ -45,8 +45,8 @@ OUTPUT_HEADER = r'''
 \ProvidesPackage{fontawesome5}[__date v__tag fontawesome icons]
 % Requirements to use.
 \usepackage{fontspec}
-% Configure a directory location for fonts(default: 'fonts/')
-\newcommand*{\fontdir}[1][fonts/]{\def\@fontdir{#1}}
+% Configure a directory location for fonts(default: 'fontawesome/otfs/')
+\newcommand*{\fontdir}[1][fontawesome/otfs/]{\def\@fontdir{#1}}
 \fontdir
 % Define pro option
 \DeclareOption{pro}{
